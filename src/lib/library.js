@@ -26,7 +26,7 @@ export async function addBookToLibrary(uid, book) {
   const ref = doc(db, "libraries", uid, "books", book.externalId);
   await setDoc(ref, {
     ...book,
-    status: "da leggere",
+    status: "Da leggere",
     addedAt: serverTimestamp(),
   });
 }

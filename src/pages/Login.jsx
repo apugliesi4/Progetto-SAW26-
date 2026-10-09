@@ -27,8 +27,8 @@ export default function Login() {
   return (
     <div className="auth-page">
       <form className="auth-card" onSubmit={handleSubmit}>
-        <h1>Bentornato</h1>
-        <p className="auth-subtitle">Accedi alla tua libreria</p>
+        <h1>Guarda chi si rivede</h1>
+        <p className="auth-subtitle">Accedi alla tua raccolta</p>
 
         <label htmlFor="email">Email</label>
         <input
@@ -55,7 +55,7 @@ export default function Login() {
         </button>
 
         <p className="auth-switch">
-          Non hai un account? <Link to="/signup">Registrati</Link>
+          Mai stato/a qua? <Link to="/signup">Sono qui per la prima volta</Link>
         </p>
       </form>
     </div>

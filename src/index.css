@@ -1,8 +1,8 @@
 @import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap");
 
 :root {
-  --ink: #12241f;
-  --ink-soft: #1c352d;
+  --ink: #171224;
+  --ink-soft: #312a47;
   --parchment: #f2ede1;
   --parchment-dim: #ddd4bf;
   --gold: #c99a3e;
@@ -312,6 +312,124 @@ a {
   place-items: center;
   color: var(--parchment-dim);
   font-family: var(--font-display);
+}
+
+.library-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 40px 0 16px;
+}
+
+.library-header h2 {
+  margin: 0;
+}
+
+.filter-select {
+  background: var(--ink-soft);
+  color: var(--parchment);
+  border: 1px solid rgba(242, 237, 225, 0.15);
+  border-radius: 3px;
+  padding: 6px 10px;
+  font-size: 0.85rem;
+}
+
+.header-actions {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.icon-button {
+  background: none;
+  border: none;
+  color: var(--parchment-dim);
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  border-radius: 4px;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.icon-button:hover {
+  color: var(--gold-bright);
+  background: rgba(242, 237, 225, 0.06);
+}
+
+/* ---------- Achievements ---------- */
+
+.achievements-section h2 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.3rem;
+  margin: 40px 0 16px;
+}
+
+.achievements-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.achievement-card {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  background: var(--ink-soft);
+  border: 1px solid rgba(242, 237, 225, 0.08);
+  border-radius: 4px;
+  padding: 14px;
+}
+
+.achievement-icon {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.achievement-card h3 {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  margin: 0 0 4px;
+}
+
+.achievement-card p {
+  font-size: 0.78rem;
+  color: var(--parchment-dim);
+  margin: 0;
+}
+
+.achievement-locked {
+  opacity: 0.45;
+}
+
+/* ---------- Footer ---------- */
+
+.app-footer {
+  margin-top: 48px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(242, 237, 225, 0.08);
+  text-align: center;
+}
+
+.app-footer a {
+  font-size: 0.8rem;
+  color: var(--parchment-dim);
+  text-decoration: underline;
+}
+
+.app-footer a:hover {
+  color: var(--gold-bright);
+}
+
+@media (max-width: 480px) {
+  .install-banner {
+    flex-direction: column;
+  }
+
+  .install-banner-actions {
+    flex-direction: row;
+    justify-content: flex-end;
+  }
 }
 
 @media (max-width: 480px) {

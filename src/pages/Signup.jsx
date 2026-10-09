@@ -33,7 +33,7 @@ export default function Signup() {
   return (
     <div className="auth-page">
       <form className="auth-card" onSubmit={handleSubmit}>
-        <h1>Crea un account</h1>
+        <h1>Cedi la tua anima👹</h1>
         <p className="auth-subtitle">Inizia a costruire la tua libreria</p>
 
         <label htmlFor="email">Email</label>
@@ -61,7 +61,7 @@ export default function Signup() {
         </button>
 
         <p className="auth-switch">
-          Hai già un account? <Link to="/login">Accedi</Link>
+          Abbiamo già i tuoi dati? <Link to="/login">Entra </Link>
         </p>
       </form>
     </div>

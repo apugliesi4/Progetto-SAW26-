@@ -1,81 +1,81 @@
 # Bookshelf
 
-Web app per cercare libri e tenere traccia delle proprie letture.
+Web app per cercare libri e tenere traccia delle proprie letture. Installabile come PWA e utilizzabile offline.
+
+## Funzionalità
+
+- Registrazione e login (Firebase Authentication, email/password)
+- Ricerca libri tramite API REST [Open Library](https://openlibrary.org/dev/docs/api/search), senza chiave
+- Libreria personale su Firestore con stati: Da leggere, In lettura, In pausa, Letto, Abbandonato
+- Filtro della libreria per stato
+- Traguardi stile videogioco, in una pagina dedicata, con notifica del browser allo sblocco
+- PWA: installabile, con service worker personalizzato e cache offline
+- Link al form di feedback in fondo alla pagina
 
 ## Stack
 
-- **Frontend**: React + Vite
-- **Autenticazione**: Firebase Authentication (email/password)
-- **Database**: Firestore (libreria personale, un documento per libro, per utente)
-- **API esterna (REST)**: [Google Books API](https://developers.google.com/books/docs/v1/using) — pubblica, non richiede chiave per le ricerche
-- **PWA**: `vite-plugin-pwa` (manifest + service worker con caching offline, installabile)
+React + Vite · Firebase (Auth, Firestore) · Open Library API · vite-plugin-pwa (strategia `injectManifest`) · lucide-react
 
-## Struttura del progetto
+## Struttura
 
 ```
 src/
-  lib/
-    firebase.js     # inizializzazione Firebase (auth + firestore)
-    booksApi.js      # client REST verso Google Books API
-    library.js       # operazioni CRUD sulla libreria personale (Firestore)
-  context/
-    AuthContext.jsx  # stato utente e azioni di login/signup/logout
-  components/
-    PrivateRoute.jsx # protegge le route che richiedono autenticazione
-    BookCard.jsx
-  pages/
-    Login.jsx
-    Signup.jsx
-    Dashboard.jsx    # ricerca libri + gestione libreria
+  sw.js                    # service worker: precache + base per Firebase Cloud Messaging
+  lib/                     # firebase, booksApi, library, achievements, notifications
+  context/AuthContext.jsx
+  components/              # BookCard, AchievementsPanel, PrivateRoute, Footer
+  pages/                   # Login, Signup, Dashboard, Achievements
 ```
 
 ## Setup
 
-### 1. Crea un progetto Firebase
-
-1. Vai su [Firebase Console](https://console.firebase.google.com) e crea un nuovo progetto.
-2. Abilita **Authentication** > metodo di accesso **Email/Password**.
-3. Crea un database **Firestore** (modalità produzione).
-4. In "Impostazioni progetto > Le tue app", crea una Web App e copia le credenziali.
-5. In Firestore, imposta le regole di sicurezza usando il contenuto di `firestore.rules` (Console Firestore > Regole).
-
-### 2. Configura le variabili d'ambiente
-
-```bash
-cp .env.example .env
+1. Progetto su [Firebase Console](https://console.firebase.google.com): abilita Authentication (Email/Password) e Firestore.
+2. Copia `.env.example` in `.env` e compila le credenziali della Web App:
 ```
-
-Compila `.env` con le credenziali copiate al punto precedente.
-
-### 3. Installa le dipendenze e avvia
-
-```bash
-npm install
-npm run dev
+   VITE_FIREBASE_API_KEY=
+   VITE_FIREBASE_AUTH_DOMAIN=
+   VITE_FIREBASE_PROJECT_ID=
+   VITE_FIREBASE_STORAGE_BUCKET=
+   VITE_FIREBASE_MESSAGING_SENDER_ID=
+   VITE_FIREBASE_APP_ID=
+   VITE_FIREBASE_VAPID_KEY=
 ```
+3. Pubblica queste regole in Firestore → Regole:
+```
+   rules_version = '2';
+   service cloud.firestore {
+     match /databases/{database}/documents {
+       match /libraries/{userId}/books/{bookId} {
+         allow read, write: if request.auth != null && request.auth.uid == userId;
+       }
+       match /users/{userId} {
+         allow read: if request.auth != null;
+         allow write: if request.auth != null && request.auth.uid == userId;
+       }
+     }
+   }
+```
+4. Installa e avvia:
+```bash
+   npm install --legacy-peer-deps
+   npm run dev
+```
+   (`--legacy-peer-deps` serve per un conflitto di versioni tra `vite` e `vite-plugin-pwa`)
 
-L'app sarà disponibile su `http://localhost:5173`.
+## PWA e notifiche
 
-### In GitHub Codespaces
+- Per testare installazione e offline usa la build di produzione: `npm run build && npm run preview`.
+- Il service worker mette in cache l'app: se non vedi le modifiche, fai *Unregister* del service worker e *Clear site data* da DevTools → Application.
+- Le notifiche dei traguardi sono locali e richiedono il permesso del browser.
+- `sw.js` gestisce già i messaggi push in background, ma l'invio automatico richiederebbe Cloud Functions (piano Blaze), quindi per ora non è attivo.
+- Su Codespaces, imposta la porta come *Public* per aprire l'app da altri dispositivi.
 
-Il progetto include una configurazione `.devcontainer` che installa automaticamente le dipendenze
-all'avvio del Codespace e apre in anteprima la porta 5173. Ricordati comunque di creare il file
-`.env` (i Codespace non hanno accesso al tuo `.env` locale a meno che tu non lo aggiunga ai
-Secrets del repository/Codespace).
-
-## PWA
-
-In `npm run dev` il service worker è attivo in modalità sviluppo. Per testare l'installazione
-come app e il comportamento offline in modo realistico, usa la build di produzione:
+## Deploy (Firebase Hosting, piano gratuito)
 
 ```bash
+npm install -g firebase-tools
+firebase login
+firebase init hosting    # public directory: dist, single-page app: sì
 npm run build
-npm run preview
+firebase deploy --only hosting
 ```
-
-## Possibili estensioni
-
-- Login con provider social (Google) tramite Firebase Auth
-- Note personali o valutazione per ogni libro nella libreria
-- Statistiche di lettura (libri letti per mese, pagine totali)
-- Condivisione della libreria pubblica tramite un link
