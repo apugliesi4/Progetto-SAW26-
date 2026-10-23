@@ -1,5 +1,6 @@
 import {
   createUserWithEmailAndPassword,
+  sendEmailVerification,
   onAuthStateChanged,
   signInWithEmailAndPassword,
   signOut,
@@ -21,8 +22,11 @@ export function AuthProvider({ children }) {
     return unsubscribe;
   }, []);
 
-  const signup = (email, password) =>
-    createUserWithEmailAndPassword(auth, email, password);
+  const signup = async (email, password) => {
+    const credential = await createUserWithEmailAndPassword(auth, email, password);
+    await sendEmailVerification(credential.user);
+    return credential;
+  };
 
   const login = (email, password) =>
     signInWithEmailAndPassword(auth, email, password);
