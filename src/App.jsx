@@ -5,6 +5,7 @@ import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Achievements from "./pages/Achievements";
+import Profile from "./pages/Profile";
 
 export default function App() {
   return (
@@ -16,6 +17,7 @@ export default function App() {
           <Route path="/" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
           <Route path="*" element={<Navigate to="/" replace />} />
           <Route path="/achievements" element={<PrivateRoute><Achievements /></PrivateRoute>} />
+          <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

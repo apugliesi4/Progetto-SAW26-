@@ -37,7 +37,7 @@ a {
   outline-offset: 2px;
 }
 
-/* ---------- Auth pages ---------- */
+/* Auth pages */
 
 .auth-page {
   min-height: 100vh;
@@ -118,6 +118,15 @@ a {
   margin: -6px 0 12px;
 }
 
+.global-banner {
+  background: rgba(182, 80, 60, 0.15);
+  border: 1px solid var(--danger);
+  padding: 10px 14px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
 .auth-switch {
   margin-top: 24px;
   font-size: 0.85rem;
@@ -125,7 +134,7 @@ a {
   text-align: center;
 }
 
-/* ---------- Dashboard ---------- */
+/* Dashboard */
 
 .dashboard {
   max-width: 1000px;
@@ -133,20 +142,134 @@ a {
   padding: 32px 24px 80px;
 }
 
+/* Header con layout a 3 colonne per centratura del titolo */
 .dashboard-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
+  display: grid;
+  grid-template-columns: 44px 1fr 44px;
+  align-items: center;
   border-bottom: 1px solid rgba(242, 237, 225, 0.1);
   padding-bottom: 20px;
   margin-bottom: 32px;
+  gap: 12px;
 }
 
-.dashboard-header h1 {
+.header-left {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.header-right {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Titolo trasformato in pulsante interattivo (Home) */
+.header-title-button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+  text-align: center;
+  color: var(--parchment);
+  transition: opacity 0.15s ease, transform 0.1s ease;
+}
+
+.header-title-button:hover {
+  opacity: 0.85;
+}
+
+.header-title-button:active {
+  transform: scale(0.99);
+}
+
+.header-title-button h1 {
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: 1.8rem;
+  font-size: 1.6rem;
   margin: 0;
+  line-height: 1.25;
+}
+
+.subtitle-tag {
+  font-family: var(--font-body);
+  font-size: 0.65rem;
+  color: var(--parchment-dim);
+  font-weight: 400;
+  display: inline-block;
+}
+
+/* Menu laterale */
+
+.menu-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 8, 16, 0.6);
+  backdrop-filter: blur(3px);
+  z-index: 1000;
+  display: flex;
+}
+
+.drawer-menu {
+  width: 280px;
+  max-width: 80%;
+  height: 100%;
+  background: var(--ink-soft);
+  border-right: 1px solid rgba(242, 237, 225, 0.1);
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  padding: 24px 20px;
+  animation: slideDrawer 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideDrawer {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.drawer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(242, 237, 225, 0.1);
+}
+
+.drawer-header h3 {
+  font-family: var(--font-display);
+  margin: 0;
+  font-size: 1.2rem;
+  color: var(--gold-bright);
+}
+
+.drawer-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.drawer-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 4px;
+  text-decoration: none;
+  color: var(--parchment);
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.drawer-link:hover {
+  background: rgba(242, 237, 225, 0.08);
+  color: var(--gold-bright);
 }
 
 .link-button {
@@ -180,6 +303,16 @@ a {
   border-radius: 3px;
   padding: 0 20px;
   font-weight: 600;
+  transition: background 0.15s ease;
+}
+
+.search-form button:hover {
+  background: var(--gold-bright);
+}
+
+.search-form button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .library-section h2 {
@@ -275,6 +408,11 @@ a {
   color: var(--ink);
   border: none;
   font-weight: 600;
+  transition: background 0.15s ease;
+}
+
+.book-actions button:hover {
+  background: var(--gold-bright);
 }
 
 .already-added {
@@ -304,6 +442,11 @@ a {
   border-radius: 3px;
   padding: 6px 10px;
   font-size: 0.8rem;
+  transition: background 0.15s ease;
+}
+
+.remove-button:hover {
+  background: rgba(182, 80, 60, 0.15);
 }
 
 .loading-screen {
@@ -347,6 +490,7 @@ a {
   padding: 6px;
   display: flex;
   align-items: center;
+  justify-content: center;
   border-radius: 4px;
   transition: color 0.15s ease, background 0.15s ease;
 }
@@ -356,7 +500,7 @@ a {
   background: rgba(242, 237, 225, 0.06);
 }
 
-/* ---------- Achievements ---------- */
+/* Achievements */
 
 .achievements-section h2 {
   font-family: var(--font-display);
@@ -402,7 +546,7 @@ a {
   opacity: 0.45;
 }
 
-/* ---------- Footer ---------- */
+/* Footer */
 
 .app-footer {
   margin-top: 48px;
@@ -421,7 +565,24 @@ a {
   color: var(--gold-bright);
 }
 
+/* Media Queries */
+
+@media (max-width: 600px) {
+  .dashboard-header h1 {
+    font-size: 1.25rem;
+  }
+
+  .subtitle-tag {
+    display: block;
+    margin-top: 2px;
+  }
+}
+
 @media (max-width: 480px) {
+  .auth-card {
+    padding: 32px 22px;
+  }
+
   .install-banner {
     flex-direction: column;
   }
@@ -429,11 +590,5 @@ a {
   .install-banner-actions {
     flex-direction: row;
     justify-content: flex-end;
-  }
-}
-
-@media (max-width: 480px) {
-  .auth-card {
-    padding: 32px 22px;
   }
 }
