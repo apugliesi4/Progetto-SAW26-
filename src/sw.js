@@ -2,10 +2,28 @@ import { precacheAndRoute } from "workbox-precaching";
 import { initializeApp } from "firebase/app";
 import { getMessaging, onBackgroundMessage } from "firebase/messaging/sw";
 
-// Precache dell'app shell (React, CSS, ecc.) — necessario per l'installabilità
-// PWA e per il funzionamento offline. Il placeholder self.__WB_MANIFEST viene
-// riempito automaticamente da vite-plugin-pwa in fase di build.
 precacheAndRoute(self.__WB_MANIFEST);
+
+const OFFLINE_FALLBACK = "/offline.html";
+
+// Caching della pagina offline statica
+self.addEventListener("install", (event) => {
+  event.waitUntil(
+    caches.open("offline-cache").then((cache) => cache.add(OFFLINE_FALLBACK))
+  );
+});
+
+// Se salta la connessione, mostra offline.html
+self.addEventListener("fetch", (event) => {
+  if (event.request.mode === "navigate") {
+    event.respondWith(
+      fetch(event.request).catch(async () => {
+        const cache = await caches.open("offline-cache");
+        return await cache.match(OFFLINE_FALLBACK);
+      })
+    );
+  }
+});
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -19,7 +37,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const messaging = getMessaging(app);
 
-// Gestisce le notifiche push ricevute mentre l'app è chiusa o in background.
 onBackgroundMessage(messaging, (payload) => {
   const title = payload.notification?.title || "Libreria-SAW";
   const body = payload.notification?.body || "";

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Offline — Bookshelf</title>
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background: #171224;
+      color: #f2ede1;
+      font-family: system-ui, sans-serif;
+      text-align: center;
+      padding: 24px;
+      box-sizing: border-box;
+    }
+    .card {
+      max-width: 420px;
+      background: #312a47;
+      border: 1px solid rgba(242, 237, 225, 0.1);
+      border-radius: 6px;
+      padding: 32px 24px;
+    }
+    h1 {
+      margin: 0 0 12px;
+      font-size: 1.5rem;
+      color: #e0b563;
+    }
+    p {
+      color: #ddd4bf;
+      font-size: 0.95rem;
+      line-height: 1.5;
+      margin: 0 0 24px;
+    }
+    button {
+      background: #c99a3e;
+      color: #171224;
+      border: none;
+      border-radius: 4px;
+      padding: 10px 20px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #e0b563;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>🕯️ Hanno spento le luci in biblioteca 🕯️</h1>
+    <p>
+      La tua connessione Internet è finita nella sezione "libri introvabili".<br />
+      Controlla la rete o soffia sulla presa prima di ricominciare il capitolo.
+    </p>
+    <button onclick="window.location.reload()">Riprova</button>
+  </div>
+</body>
+</html>
