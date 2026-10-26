@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
+import { ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import AchievementsPanel from "../components/AchievementsPanel";
 import { useAuth } from "../context/AuthContext";
 import { subscribeToUnlockedAchievements } from "../lib/achievements";
-import { Undo2 } from "lucide-react";
 import Footer from "../components/Footer";
 
 export default function Achievements() {
@@ -19,11 +19,12 @@ export default function Achievements() {
   return (
     <div className="dashboard">
       <header className="dashboard-header">
-        <h1>Traguardi</h1>
-        <Link className="icon-button" to="/">
-          <Undo2 size={20} />
+        <Link to="/" className="icon-button" title="Torna indietro">
+          <ArrowLeft size={20} />
         </Link>
-      </header>
+      <h1 style={{ textAlign: "center", width: "100%" }}>I tuoi Traguardi 🏆 </h1>
+    <div style={{ width: 20 }} />
+    </header>
 
       <AchievementsPanel unlocked={unlockedAchievements} />
       <Footer />

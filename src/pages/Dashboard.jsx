@@ -1,6 +1,8 @@
 import { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { LogOut, Trophy, Menu, X, User } from "lucide-react";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "../lib/firebase";
 import BookCard from "../components/BookCard";
 import Footer from "../components/Footer";
 import { useAuth } from "../context/AuthContext";
@@ -21,21 +23,43 @@ const FILTER_OPTIONS = ["Tutti", ...STATUSES];
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
-  
-  // Menu laterale
-  const [menuOpen, setMenuOpen] = useState(false);
 
-  // Ricerca
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [profile, setProfile] = useState({
+    nickname: "",
+    avatar: "/avatars/fantasy.png",
+  });
+
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState("");
 
-  // Libreria
   const [library, setLibrary] = useState([]);
   const [statusFilter, setStatusFilter] = useState("Tutti");
   const [actionError, setActionError] = useState("");
 
+  // Caricamento profilo utente da Firestore
+  useEffect(() => {
+    if (!user?.uid) return;
+    const loadProfile = async () => {
+      try {
+        const snap = await getDoc(doc(db, "users", user.uid));
+        if (snap.exists()) {
+          const data = snap.data();
+          setProfile({
+            nickname: data.nickname || "",
+            avatar: data.avatar || "/avatars/fantasy.png",
+          });
+        }
+      } catch (err) {
+        console.error("Errore recupero profilo:", err);
+      }
+    };
+    loadProfile();
+  }, [user]);
+
+  // Listener real-time sulla libreria
   useEffect(() => {
     if (!user?.uid) return;
 
@@ -117,23 +141,23 @@ export default function Dashboard() {
   return (
     <div className="dashboard">
       <header className="dashboard-header">
-        {/* Hamburger Menu */}
         <div className="header-left">
           <button
+            type="button"
             className="icon-button"
             onClick={() => setMenuOpen(!menuOpen)}
-            aria-label="Apri menu di navigazione"
+            aria-label="Apri menu"
             title="Menu"
           >
             {menuOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
         </div>
 
-        {/* Titolo cliccabile (funge da Home) */}
         <button
+          type="button"
           className="header-title-button"
           onClick={handleGoHome}
-          title="Torna alla vista iniziale"
+          title="Torna alla home"
         >
           <h1>
             La tua ✨<i>magnifica</i>✨ raccolta di carta{" "}
@@ -141,12 +165,12 @@ export default function Dashboard() {
           </h1>
         </button>
 
-        {/* Logout */}
         <div className="header-right">
           <button
+            type="button"
             className="icon-button"
             onClick={logout}
-            aria-label="Effettua il logout"
+            aria-label="Logout"
             title="Disconnettiti"
           >
             <LogOut size={20} />
@@ -154,6 +178,7 @@ export default function Dashboard() {
         </div>
       </header>
 
+      {/* Hamburger Drawer Menu */}
       {menuOpen && (
         <div className="menu-backdrop" onClick={() => setMenuOpen(false)}>
           <aside
@@ -162,8 +187,27 @@ export default function Dashboard() {
             aria-label="Menu laterale"
           >
             <div className="drawer-header">
-              <h3>Menu</h3>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <img
+                  src={profile.avatar}
+                  alt="Avatar"
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: "50%",
+                    objectFit: "cover",
+                    border: "2px solid var(--gold-bright)",
+                  }}
+                  onError={(e) => {
+                    e.currentTarget.src = "/avatars/fantasy.png";
+                  }}
+                />
+                <span style={{ fontWeight: 600, color: "var(--parchment)" }}>
+                  {profile.nickname || "Lettore"}
+                </span>
+              </div>
               <button
+                type="button"
                 className="icon-button"
                 onClick={() => setMenuOpen(false)}
                 aria-label="Chiudi menu"
@@ -171,6 +215,7 @@ export default function Dashboard() {
                 <X size={20} />
               </button>
             </div>
+
             <nav className="drawer-nav">
               <Link
                 to="/profile"
@@ -180,6 +225,7 @@ export default function Dashboard() {
                 <User size={18} />
                 <span>Profilo</span>
               </Link>
+
               <Link
                 to="/achievements"
                 className="drawer-link"
@@ -225,7 +271,9 @@ export default function Dashboard() {
                     isAlreadyInLibrary ? (
                       <span className="already-added">Ce l'ho</span>
                     ) : (
-                      <button onClick={() => handleAdd(book)}>Aggiungi</button>
+                      <button type="button" onClick={() => handleAdd(book)}>
+                        Aggiungi
+                      </button>
                     )
                   }
                 />
@@ -277,6 +325,7 @@ export default function Dashboard() {
                       ))}
                     </select>
                     <button
+                      type="button"
                       className="remove-button"
                       onClick={() => handleRemove(book.id)}
                     >

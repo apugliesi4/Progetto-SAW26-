@@ -7,17 +7,21 @@ import { updatePassword, updateEmail } from "firebase/auth";
 import { db, auth } from "../lib/firebase";
 
 const AVATARS = [
-  "/avatars/avatar1.png",
-  "/avatars/avatar2.png",
-  "/avatars/avatar3.png",
-  "/avatars/avatar4.png",
+  { id: "fantasy", label: "Fantasy", src: "/avatars/fantasy.png" },
+  { id: "scifi", label: "Sci-Fi", src: "/avatars/scifi.png" },
+  { id: "thriller", label: "Thriller", src: "/avatars/thriller.png" },
+  { id: "horror", label: "Horror", src: "/avatars/horror.png" },
+  { id: "manga", label: "Manga", src: "/avatars/manga.png" },
+  { id: "classic", label: "Classico", src: "/avatars/classic.png" },
+  { id: "romance", label: "Romance", src: "/avatars/romance.png" },
+  { id: "adventure", label: "Avventura", src: "/avatars/adventure.png" },
+  { id: "essay", label: "Saggio", src: "/avatars/essay.png" },
 ];
-
 export default function Profile() {
   const { user } = useAuth();
 
   const [nickname, setNickname] = useState("");
-  const [avatar, setAvatar] = useState(AVATARS[0]);
+  const [avatar, setAvatar] = useState(AVATARS[0].src);
   const [newEmail, setNewEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [msg, setMsg] = useState("");
@@ -26,15 +30,20 @@ export default function Profile() {
   useEffect(() => {
     if (!user) return;
     setNewEmail(user.email || "");
+
     const fetchProfile = async () => {
-      const ref = doc(db, "users", user.uid);
-      const snap = await getDoc(ref);
-      if (snap.exists()) {
-        const data = snap.data();
-        if (data.nickname) setNickname(data.nickname);
-        if (data.avatar) setAvatar(data.avatar);
+      try {
+        const snap = await getDoc(doc(db, "users", user.uid));
+        if (snap.exists()) {
+          const data = snap.data();
+          if (data.nickname) setNickname(data.nickname);
+          if (data.avatar) setAvatar(data.avatar);
+        }
+      } catch (e) {
+        setErr("Errore nel caricamento del profilo.");
       }
     };
+
     fetchProfile();
   }, [user]);
 
@@ -82,17 +91,21 @@ export default function Profile() {
   return (
     <div className="dashboard">
       <header className="dashboard-header">
-        <Link to="/" className="icon-button" title="Torna indietro">
-          <ArrowLeft size={20} />
-        </Link>
-        <h1 style={{ textAlign: "center", width: "100%" }}>Il tuo Profilo</h1>
-        <div style={{ width: 20 }} />
+        <div className="header-left">
+          <Link to="/" className="icon-button" title="Torna indietro">
+            <ArrowLeft size={20} />
+          </Link>
+        </div>
+        <h1 style={{ textAlign: "center", margin: 0 }}>Il tuo Profilo</h1>
+        <div className="header-right" style={{ width: 44 }}></div>
       </header>
 
       {msg && <p style={{ color: "var(--gold-bright)", textAlign: "center" }}>{msg}</p>}
       {err && <p className="auth-error" style={{ textAlign: "center" }}>{err}</p>}
 
       <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
+        
+        {/* Modifica Nickname e Avatar */}
         <form onSubmit={handleSaveProfile} className="auth-card" style={{ maxWidth: 500, margin: "0 auto" }}>
           <h2>Dati Personali</h2>
           <label>Nickname</label>
@@ -103,28 +116,40 @@ export default function Profile() {
             placeholder="Scegli un nickname"
           />
 
-          <label>Avatar</label>
-          <div style={{ display: "flex", gap: 12, marginBottom: 18 }}>
-            {AVATARS.map((av) => (
-              <img
-                key={av}
-                src={av}
-                alt="Avatar"
-                onClick={() => setAvatar(av)}
+          <label>Scegli il tuo stile di lettura</label>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, margin: "12px 0 20px" }}>
+            {AVATARS.map((item) => (
+              <div
+                key={item.id}
+                onClick={() => setAvatar(item.src)}
                 style={{
-                  width: 50,
-                  height: 50,
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
                   cursor: "pointer",
-                  borderRadius: "50%",
-                  border: avatar === av ? "2px solid var(--gold-bright)" : "2px solid transparent",
+                  padding: 8,
+                  borderRadius: 4,
+                  background: avatar === item.src ? "rgba(201, 154, 62, 0.15)" : "var(--ink)",
+                  border: avatar === item.src ? "2px solid var(--gold-bright)" : "1px solid rgba(242, 237, 225, 0.1)",
                 }}
-              />
+              >
+                <img
+                  src={item.src}
+                  alt={item.label}
+                  style={{ width: 56, height: 56, borderRadius: "50%", objectFit: "cover" }}
+                  onError={(e) => { e.target.style.display = "none"; }}
+                />
+                <span style={{ fontSize: "0.75rem", marginTop: 4, color: "var(--parchment-dim)" }}>
+                  {item.label}
+                </span>
+              </div>
             ))}
           </div>
 
           <button type="submit">Salva Profilo</button>
         </form>
 
+        {/* Modifica Email */}
         <form onSubmit={handleChangeEmail} className="auth-card" style={{ maxWidth: 500, margin: "0 auto" }}>
           <h2>Modifica Email</h2>
           <label>Nuova Email</label>
@@ -137,6 +162,7 @@ export default function Profile() {
           <button type="submit">Aggiorna Email</button>
         </form>
 
+        {/* Modifica Password */}
         <form onSubmit={handleChangePassword} className="auth-card" style={{ maxWidth: 500, margin: "0 auto" }}>
           <h2>Modifica Password</h2>
           <label>Nuova Password</label>
@@ -144,7 +170,7 @@ export default function Profile() {
             type="password"
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
-            placeholder="Questa ricordatela, eh!"
+            placeholder="Questa ricordatela"
             required
           />
           <button type="submit">Aggiorna Password</button>
