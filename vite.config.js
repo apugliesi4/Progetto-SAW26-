@@ -6,8 +6,7 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      // injectManifest: usiamo un service worker scritto a mano (src/sw.js)
-      // invece di quello generato automaticamente, perché deve anche gestire
+      // injectManifest: usiamo un service worker scritto a mano (src/sw.js) invece di quello generato automaticamente, perché deve anche gestire
       // le notifiche push di Firebase Cloud Messaging in background.
       strategies: 'injectManifest',
       srcDir: 'src',
@@ -32,8 +31,7 @@ export default defineConfig({
         ],
       },
       devOptions: {
-        // Attiva il service worker anche in `npm run dev`, non solo in build
-        // di produzione — necessario per testare le notifiche push subito.
+        // attiva il service worker anche in `npm run dev`, non solo in build di produzione — necessario per testare le notifiche push subito.
         enabled: true,
         type: 'module',
       },
