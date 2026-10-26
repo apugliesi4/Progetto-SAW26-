@@ -1,1 +1,11 @@
-node_modules
+# Dipendenze 
+node_modules/
+
+# Variabili d'ambiente e credenziali
+.env 
+.env.local 
+.env.*.local 
+
+# Cartella di build finale 
+dist/ 
+build/
