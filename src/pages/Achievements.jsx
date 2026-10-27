@@ -22,7 +22,7 @@ export default function Achievements() {
         <Link to="/" className="icon-button" title="Torna indietro">
           <ArrowLeft size={20} />
         </Link>
-      <h1 style={{ textAlign: "center", width: "100%" }}>I tuoi Traguardi 🏆 </h1>
+      <h1 style={{ textAlign: "center", width: "100%" }}>I tuoi 🌟<i>impressionanti</i>🌟 traguardi</h1>
     <div style={{ width: 20 }} />
     </header>
 
