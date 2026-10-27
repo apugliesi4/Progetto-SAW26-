@@ -96,7 +96,7 @@ export default function Profile() {
             <ArrowLeft size={20} />
           </Link>
         </div>
-        <h1 style={{ textAlign: "center", margin: 0 }}>Il tuo Profilo</h1>
+        <h1 style={{ textAlign: "center", margin: 0 }}>Il tuo 🤩<i>stupendo</i>🤩 profilo</h1>
         <div className="header-right" style={{ width: 44 }}></div>
       </header>
 
