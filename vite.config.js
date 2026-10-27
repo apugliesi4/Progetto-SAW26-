@@ -18,7 +18,7 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['icons/icon-192.png', 'icons/icon-512.png'],
       manifest: {
-        name: 'Libreria-SAW - la tua libreria personale',
+        name: 'Libreria-SAW - la tua magnifica raccolta di carta digitale',
         short_name: 'Libreria-SAW',
         description: 'Cerca libri e tieni traccia delle tue letture.',
         theme_color: '#12241f',

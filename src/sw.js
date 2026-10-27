@@ -8,6 +8,10 @@ const OFFLINE_FALLBACK = "/offline.html";
 
 // Caching della pagina offline statica
 self.addEventListener("install", (event) => {
+
+  // Salta la fase di attesa attivando subito il nuovo Service Worker 
+  self.skipWaiting();
+
   event.waitUntil(
     caches.open("offline-cache").then((cache) => cache.add(OFFLINE_FALLBACK))
   );
@@ -23,6 +27,23 @@ self.addEventListener("fetch", (event) => {
       })
     );
   }
+});
+
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+
+    // Prende il controllo immediato di tutte le schede/pagine aperte
+    self.clients.claim().then(async () => {
+
+      // Pulizia di vecchie cache non più necessarie per aggiornamento versione
+      const cacheNames = await caches.keys();
+      return Promise.all(
+        cacheNames
+          .filter((name) => name !== "offline-cache" && !name.startsWith("workbox-precache"))
+          .map((name) => caches.delete(name))
+      );
+    })
+  );
 });
 
 const firebaseConfig = {
