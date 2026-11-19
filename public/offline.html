@@ -1,62 +1,94 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="it">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Offline — Bookshelf</title>
+  <meta name="theme-color" content="#171224" />
+  <link rel="icon" type="image/png" href="/icons/icon-192.png" />
+  <title>Offline — Libreria-SAW</title>
   <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
     body {
       margin: 0;
       min-height: 100vh;
       display: grid;
       place-items: center;
-      background: #171224;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(201, 154, 62, 0.12), transparent 45%),
+        #171224;
       color: #f2ede1;
-      font-family: system-ui, sans-serif;
+      font-family: system-ui, -apple-system, sans-serif;
       text-align: center;
       padding: 24px;
-      box-sizing: border-box;
     }
+
     .card {
+      width: 100%;
       max-width: 420px;
       background: #312a47;
       border: 1px solid rgba(242, 237, 225, 0.1);
-      border-radius: 6px;
-      padding: 32px 24px;
+      border-radius: 4px;
+      padding: 36px 28px;
     }
+
     h1 {
+      font-family: Georgia, "Times New Roman", serif;
       margin: 0 0 12px;
       font-size: 1.5rem;
+      font-weight: 600;
+      line-height: 1.3;
       color: #e0b563;
     }
+
     p {
       color: #ddd4bf;
       font-size: 0.95rem;
-      line-height: 1.5;
+      line-height: 1.55;
       margin: 0 0 24px;
     }
+
     button {
       background: #c99a3e;
       color: #171224;
       border: none;
-      border-radius: 4px;
-      padding: 10px 20px;
+      border-radius: 3px;
+      padding: 11px 22px;
+      font-family: inherit;
+      font-size: 0.9rem;
       font-weight: 600;
       cursor: pointer;
+      transition: background 0.15s ease;
     }
+
     button:hover {
       background: #e0b563;
+    }
+
+    button:focus-visible {
+      outline: 2px solid #e0b563;
+      outline-offset: 2px;
     }
   </style>
 </head>
 <body>
-  <div class="card">
+  <main class="card">
     <h1>🕯️ Hanno spento le luci in biblioteca 🕯️</h1>
     <p>
       La tua connessione Internet è finita nella sezione "libri introvabili".<br />
       Controlla la rete o soffia sulla presa prima di ricominciare il capitolo.
     </p>
-    <button onclick="window.location.reload()">Riprova</button>
-  </div>
+    <button type="button" onclick="window.location.reload()">Riprova</button>
+  </main>
+
+  <script>
+    
+    // Ricarica automaticamente l'app appena il browser rileva il ritorno della connessione
+    window.addEventListener("online", () => window.location.reload());
+  </script>
 </body>
 </html>

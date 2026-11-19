@@ -1,6 +1,9 @@
 import { doc, getDoc, onSnapshot, setDoc } from "firebase/firestore";
 import { db } from "./firebase";
 
+const ALL_STATUSES = ["Da leggere", "In lettura", "In pausa", "Letto", "Abbandonato"];
+
+// Elenco dei traguardi disponibili e relative condizioni di sblocco
 export const ACHIEVEMENTS = [
   {
     id: "1st-book",
@@ -47,26 +50,26 @@ export const ACHIEVEMENTS = [
   {
     id: "multitasker",
     title: "Multitasking",
-    description: "Hai 3 libri \"In lettura\" contemporaneamente",
+    description: 'Hai 3 libri "In lettura" contemporaneamente',
     check: (stats) => stats.inProgress >= 3,
   },
   {
     id: "1st-in-hold",
     title: "Non sei tu... sono io...",
-    description: "Hai messo un pausa una lettura",
-    check: (stats) => stats.hold,
+    description: "Hai messo in pausa una lettura",
+    check: (stats) => stats.hold >= 1,
   },
   {
     id: "in-hold-3",
     title: "Indeciso",
-    description: "Hai 3 libri \"In pausa\"",
+    description: 'Hai 3 libri "In pausa"',
     check: (stats) => stats.hold >= 3,
   },
   {
     id: "1st-dropped",
     title: "Ma seriamente??",
     description: "Hai abbandonato un povero libro innocente :(",
-    check: (stats) => stats.dropped,
+    check: (stats) => stats.dropped >= 1,
   },
   {
     id: "dropped-3",
@@ -94,55 +97,84 @@ export const ACHIEVEMENTS = [
   },
 ];
 
-const ALL_STATUSES = ["Da leggere", "In lettura", "In pausa", "Letto", "Abbandonato"];
+// Calcola tutte le statistiche della libreria con una singola iterazione
+export function computeStats(library = []) {
+  let read = 0;
+  let dropped = 0;
+  let inProgress = 0;
+  let hold = 0;
+  let hasLongBookRead = false;
 
-export function computeStats(library) {
-  const uniqueAuthors = new Set(
-    library.flatMap((b) => (Array.isArray(b.authors) ? b.authors : []))
-  );
+  const uniqueAuthors = new Set();
+  const statusesPresent = new Set();
 
-  const statusesPresent = new Set(library.map((b) => b.status));
+  for (const book of library) {
+    if (book.status) {
+      statusesPresent.add(book.status);
+
+      if (book.status === "Letto") {
+        read++;
+        if (book.pageCount >= 800) hasLongBookRead = true;
+      } else if (book.status === "Abbandonato") {
+        dropped++;
+      } else if (book.status === "In lettura") {
+        inProgress++;
+      } else if (book.status === "In pausa") {
+        hold++;
+      }
+    }
+
+    if (Array.isArray(book.authors)) {
+      book.authors.forEach((author) => uniqueAuthors.add(author));
+    }
+  }
 
   return {
     total: library.length,
-    read: library.filter((b) => b.status === "Letto").length,
-    dropped: library.filter((b) => b.status === "Abbandonato").length,
-    inProgress: library.filter((b) => b.status === "In lettura").length,
-    hold: library.filter((b) => b.status === "In pausa").length,
+    read,
+    dropped,
+    inProgress,
+    hold,
     uniqueAuthors: uniqueAuthors.size,
-    hasLongBookRead: library.some((b) => b.status === "Letto" && b.pageCount && b.pageCount >= 800),
+    hasLongBookRead,
     allStatusesUsed: ALL_STATUSES.every((s) => statusesPresent.has(s)),
   };
 }
 
+// Verifica e salva su Firestore eventuali nuovi traguardi sbloccati
 export async function checkNewAchievements(uid, library) {
+  if (!uid) return [];
+
   const stats = computeStats(library);
   const userRef = doc(db, "users", uid);
   const userSnap = await getDoc(userRef);
-  const unlocked = (userSnap.exists() && userSnap.data().unlockedAchievements) || {};
+  const unlocked = userSnap.data()?.unlockedAchievements || {};
 
   const newlyUnlocked = ACHIEVEMENTS.filter(
     (a) => !unlocked[a.id] && a.check(stats)
   );
 
-    if (newlyUnlocked.length === 0) return [];
+  if (newlyUnlocked.length === 0) return [];
 
-    const updates = { unlockedAchievements: {} };
-    newlyUnlocked.forEach((a) => {
+  const updates = { unlockedAchievements: {} };
+  newlyUnlocked.forEach((a) => {
     updates.unlockedAchievements[a.id] = true;
-    });
+  });
 
-    await setDoc(userRef, updates, { merge: true });
-    return newlyUnlocked;
+  await setDoc(userRef, updates, { merge: true });
+  return newlyUnlocked;
 }
 
+// Ascolta in tempo reale i traguardi sbloccati dall'utente
 export function subscribeToUnlockedAchievements(uid, callback) {
+  if (!uid) return () => {};
+
   return onSnapshot(doc(db, "users", uid), (snapshot) => {
-    const unlocked = (snapshot.exists() && snapshot.data().unlockedAchievements) || {};
-    callback(unlocked);
+    callback(snapshot.data()?.unlockedAchievements || {});
   });
 }
 
+// Mostra una notifica push di sistema (via Service Worker o Notification API)
 export async function notifyAchievement(achievement) {
   if (typeof Notification === "undefined" || Notification.permission !== "granted") {
     return;
@@ -153,7 +185,7 @@ export async function notifyAchievement(achievement) {
     icon: "/icons/icon-192.png",
   };
 
-  if (navigator.serviceWorker) {
+  if ("serviceWorker" in navigator) {
     const registration = await navigator.serviceWorker.getRegistration();
     if (registration) {
       registration.showNotification(`🏆 ${achievement.title}`, options);

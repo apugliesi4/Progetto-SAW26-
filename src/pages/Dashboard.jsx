@@ -1,109 +1,131 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { LogOut, Trophy, Menu, X, User } from "lucide-react";
+import { LogOut, Menu, Trophy, User, X } from "lucide-react";
 import { doc, getDoc } from "firebase/firestore";
-import { db } from "../lib/firebase";
 import BookCard from "../components/BookCard";
 import Footer from "../components/Footer";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/AuthContext";import { checkNewAchievements, notifyAchievement } from "../lib/achievements";
 import { searchBooks } from "../lib/booksApi";
+import { db } from "../lib/firebase";
 import {
   addBookToLibrary,
   removeBookFromLibrary,
   subscribeToLibrary,
   updateBookStatus,
 } from "../lib/library";
-import {
-  checkNewAchievements,
-  notifyAchievement,
-} from "../lib/achievements";
 
 const STATUSES = ["Da leggere", "In lettura", "Letto", "In pausa", "Abbandonato"];
 const FILTER_OPTIONS = ["Tutti", ...STATUSES];
+const DEFAULT_AVATAR = "/avatars/fantasy.png";
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
 
+  // Stato menu laterale e profilo
   const [menuOpen, setMenuOpen] = useState(false);
-  const [profile, setProfile] = useState({
-    nickname: "",
-    avatar: "/avatars/fantasy.png",
-  });
+  const [profile, setProfile] = useState({ nickname: "", avatar: DEFAULT_AVATAR });
 
+  // Stato ricerca Open Library
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState("");
+  const abortRef = useRef(null);
 
+  // Stato libreria e azioni CRUD
   const [library, setLibrary] = useState([]);
   const [statusFilter, setStatusFilter] = useState("Tutti");
   const [actionError, setActionError] = useState("");
 
-  // Caricamento profilo utente da Firestore
+  // Carica nickname e avatar da Firestore
   useEffect(() => {
     if (!user?.uid) return;
-    const loadProfile = async () => {
+
+    async function loadProfile() {
       try {
         const snap = await getDoc(doc(db, "users", user.uid));
         if (snap.exists()) {
           const data = snap.data();
           setProfile({
             nickname: data.nickname || "",
-            avatar: data.avatar || "/avatars/fantasy.png",
+            avatar: data.avatar || DEFAULT_AVATAR,
           });
         }
       } catch (err) {
         console.error("Errore recupero profilo:", err);
       }
-    };
-    loadProfile();
-  }, [user]);
+    }
 
-  // Listener real-time sulla libreria
+    loadProfile();
+  }, [user?.uid]);
+
+  // Ascolta la libreria in tempo reale e controlla i nuovi traguardi
   useEffect(() => {
     if (!user?.uid) return;
 
-    const unsubscribe = subscribeToLibrary(user.uid, (books) => {
+    return subscribeToLibrary(user.uid, (books) => {
       setLibrary(books);
       checkNewAchievements(user.uid, books)
-        .then((newlyUnlocked) => {
-          if (Array.isArray(newlyUnlocked)) {
-            newlyUnlocked.forEach(notifyAchievement);
-          }
-        })
+        .then((newlyUnlocked) => newlyUnlocked?.forEach(notifyAchievement))
         .catch(console.error);
     });
+  }, [user?.uid]);
 
-    return () => unsubscribe();
-  }, [user]);
+  // Chiude il drawer con il tasto ESC e annulla eventuali ricerche in corso allo smontaggio
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") setMenuOpen(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
 
-  const libraryIds = useMemo(() => {
-    return new Set(library.map((b) => b.externalId || b.id));
-  }, [library]);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      abortRef.current?.abort();
+    };
+  }, []);
 
+  // Set di ID per verificare istantaneamente se un libro è già in libreria
+  const libraryIds = useMemo(
+    () => new Set(library.map((b) => b.externalId || b.id)),
+    [library]
+  );
+
+  // Filtra i libri in base allo stato selezionato
   const filteredLibrary = useMemo(() => {
     if (statusFilter === "Tutti") return library;
     return library.filter((book) => book.status === statusFilter);
   }, [library, statusFilter]);
 
+  // Ricerca libri tramite API esterna (annullando eventuali richieste precedenti ancora in corso)
   async function handleSearch(e) {
     e.preventDefault();
     const cleanQuery = query.trim();
     if (!cleanQuery) return;
 
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     setSearching(true);
     setSearchError("");
+
     try {
-      const books = await searchBooks(cleanQuery);
+      const books = await searchBooks(cleanQuery, controller.signal);
       setResults(books);
     } catch (err) {
-      setSearchError(err.message || "Errore durante la ricerca.");
+      if (err.name !== "AbortError") {
+        setSearchError(err.message || "Errore durante la ricerca.");
+      }
     } finally {
-      setSearching(false);
+      if (!controller.signal.aborted) {
+        setSearching(false);
+      }
     }
   }
 
+  // Resetta la ricerca e torna in cima alla pagina
   function handleGoHome() {
+    abortRef.current?.abort();
     setQuery("");
     setResults([]);
     setSearchError("");
@@ -115,7 +137,7 @@ export default function Dashboard() {
     try {
       setActionError("");
       await addBookToLibrary(user.uid, book);
-    } catch (err) {
+    } catch {
       setActionError("Impossibile aggiungere il libro. Riprova.");
     }
   }
@@ -124,7 +146,7 @@ export default function Dashboard() {
     try {
       setActionError("");
       await updateBookStatus(user.uid, bookId, newStatus);
-    } catch (err) {
+    } catch {
       setActionError("Errore durante l'aggiornamento dello stato.");
     }
   }
@@ -133,7 +155,7 @@ export default function Dashboard() {
     try {
       setActionError("");
       await removeBookFromLibrary(user.uid, bookId);
-    } catch (err) {
+    } catch {
       setActionError("Impossibile rimuovere il libro.");
     }
   }
@@ -145,8 +167,9 @@ export default function Dashboard() {
           <button
             type="button"
             className="icon-button"
-            onClick={() => setMenuOpen(!menuOpen)}
+            onClick={() => setMenuOpen((prev) => !prev)}
             aria-label="Apri menu"
+            aria-expanded={menuOpen}
             title="Menu"
           >
             {menuOpen ? <X size={22} /> : <Menu size={22} />}
@@ -178,7 +201,7 @@ export default function Dashboard() {
         </div>
       </header>
 
-      {/* Hamburger Drawer Menu */}
+      {/* Menu laterale (Drawer) */}
       {menuOpen && (
         <div className="menu-backdrop" onClick={() => setMenuOpen(false)}>
           <aside
@@ -199,7 +222,9 @@ export default function Dashboard() {
                     border: "2px solid var(--gold-bright)",
                   }}
                   onError={(e) => {
-                    e.currentTarget.src = "/avatars/fantasy.png";
+                    // Evita loop se anche l'immagine di fallback fallisce
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = DEFAULT_AVATAR;
                   }}
                 />
                 <span style={{ fontWeight: 600, color: "var(--parchment)" }}>
@@ -217,20 +242,12 @@ export default function Dashboard() {
             </div>
 
             <nav className="drawer-nav">
-              <Link
-                to="/profile"
-                className="drawer-link"
-                onClick={() => setMenuOpen(false)}
-              >
+              <Link to="/profile" className="drawer-link" onClick={() => setMenuOpen(false)}>
                 <User size={18} />
                 <span>Profilo</span>
               </Link>
 
-              <Link
-                to="/achievements"
-                className="drawer-link"
-                onClick={() => setMenuOpen(false)}
-              >
+              <Link to="/achievements" className="drawer-link" onClick={() => setMenuOpen(false)}>
                 <Trophy size={18} />
                 <span>Traguardi</span>
               </Link>
@@ -291,6 +308,7 @@ export default function Dashboard() {
             className="filter-select"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
+            aria-label="Filtra per stato di lettura"
           >
             {FILTER_OPTIONS.map((status) => (
               <option key={status} value={status}>
@@ -317,6 +335,7 @@ export default function Dashboard() {
                     <select
                       value={book.status}
                       onChange={(e) => handleStatusChange(book.id, e.target.value)}
+                      aria-label={`Stato di ${book.title}`}
                     >
                       {STATUSES.map((status) => (
                         <option key={status} value={status}>

@@ -1,9 +1,32 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Ogni utente può leggere e scrivere solo la propria libreria.
+
+    // Funzione di supporto: verifica che l'utente sia autenticato e proprietario del documento
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    // Profilo utente (nickname, avatar) e traguardi sbloccati (unlockedAchievements)
+    match /users/{userId} {
+      allow read, delete: if isOwner(userId);
+      allow create, update: if isOwner(userId)
+        && (!('nickname' in request.resource.data) || request.resource.data.nickname is string)
+        && (!('avatar' in request.resource.data) || request.resource.data.avatar is string);
+    }
+
+    // Libreria personale: ogni utente gestisce solo i propri libri
     match /libraries/{userId}/books/{bookId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read, delete: if isOwner(userId);
+      allow create, update: if isOwner(userId)
+        && request.resource.data.title is string
+        && request.resource.data.status in [
+          "Da leggere",
+          "In lettura",
+          "In pausa",
+          "Letto",
+          "Abbandonato"
+        ];
     }
   }
 }

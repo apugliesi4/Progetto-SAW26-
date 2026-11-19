@@ -6,23 +6,20 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      // injectManifest: usiamo un service worker scritto a mano (src/sw.js) invece di quello generato automaticamente, perché deve anche gestire
-      // le notifiche push di Firebase Cloud Messaging in background.
+      // Usa il service worker custom (src/sw.js) per gestire sia la cache che le notifiche push
       strategies: 'injectManifest',
       srcDir: 'src',
       filename: 'sw.js',
-      injectManifest: {
-        swSrc: 'src/sw.js',
-        swDest: 'dist/sw.js',
-      },
       registerType: 'autoUpdate',
-      includeAssets: ['icons/icon-192.png', 'icons/icon-512.png'],
+      // Precacha icone e pagina di fallback offline dalla cartella public/
+      includeAssets: ['offline.html', 'apple-touch-icon.png', 'icons/icon-192.png', 'icons/icon-512.png'],
       manifest: {
         name: 'Libreria-SAW - la tua magnifica raccolta di carta digitale',
         short_name: 'Libreria-SAW',
         description: 'Cerca libri e tieni traccia delle tue letture.',
-        theme_color: '#12241f',
-        background_color: '#12241f',
+        // Allineato alla variabile CSS --ink (#171224) per evitare flash di colore all'avvio
+        theme_color: '#171224',
+        background_color: '#171224',
         display: 'standalone',
         start_url: '/',
         icons: [
@@ -31,7 +28,7 @@ export default defineConfig({
         ],
       },
       devOptions: {
-        // attiva il service worker anche in `npm run dev`, non solo in build di produzione — necessario per testare le notifiche push subito.
+        // Abilita il service worker anche in sviluppo per testare cache e notifiche
         enabled: true,
         type: 'module',
       },

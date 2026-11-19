@@ -1,24 +1,25 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import {
+  deleteUser,
+  sendPasswordResetEmail,
   updateEmail,
   updatePassword,
-  sendPasswordResetEmail,
-  deleteUser,
 } from "firebase/auth";
 import {
+  collection,
+  deleteDoc,
   doc,
   getDoc,
-  updateDoc,
-  deleteDoc,
-  collection,
   getDocs,
+  setDoc,
   writeBatch,
 } from "firebase/firestore";
-import { auth, db } from "../lib/firebase";
-import { useAuth } from "../context/AuthContext";
 import Footer from "../components/Footer";
+import { useAuth } from "../context/AuthContext";import { auth, db } from "../lib/firebase";
+
+const DEFAULT_AVATAR = "/avatars/fantasy.png";
 
 // 9 avatar tematici (griglia 3x3)
 const AVATARS = [
@@ -39,7 +40,7 @@ export default function Profile() {
 
   // Dati profilo
   const [nickname, setNickname] = useState("");
-  const [selectedAvatar, setSelectedAvatar] = useState("/avatars/fantasy.png");
+  const [selectedAvatar, setSelectedAvatar] = useState(DEFAULT_AVATAR);
   const [newEmail, setNewEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
 
@@ -56,42 +57,46 @@ export default function Profile() {
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
 
-  // Caricamento dati da Firestore
+  // Carica nickname e avatar da Firestore
   useEffect(() => {
+    if (!user?.uid) return;
+
     async function loadUserData() {
-      if (!user) return;
       try {
         const userDoc = await getDoc(doc(db, "users", user.uid));
         if (userDoc.exists()) {
           const data = userDoc.data();
           setNickname(data.nickname || "");
-          setSelectedAvatar(data.avatar || "/avatars/fantasy.png");
+          setSelectedAvatar(data.avatar || DEFAULT_AVATAR);
         }
         setNewEmail(user.email || "");
-      } catch (err) {
+      } catch {
         setErrorMsg("Errore nel recupero delle informazioni del profilo.");
       } finally {
         setLoading(false);
       }
     }
-    loadUserData();
-  }, [user]);
 
-  // Salva Nickname e Avatar
+    loadUserData();
+}, [user?.uid, user?.email]);
+
+  // Salva Nickname e Avatar (usa merge per creare il documento se non esiste)
   async function handleSaveProfile(e) {
     e.preventDefault();
-    if (!user) return;
+    if (!user?.uid) return;
+
     setSavingProfile(true);
     setProfileMsg("");
     setErrorMsg("");
 
     try {
-      await updateDoc(doc(db, "users", user.uid), {
-        nickname: nickname.trim(),
-        avatar: selectedAvatar,
-      });
+      await setDoc(
+        doc(db, "users", user.uid),
+        { nickname: nickname.trim(), avatar: selectedAvatar },
+        { merge: true }
+      );
       setProfileMsg("Profilo aggiornato con successo!");
-    } catch (err) {
+    } catch {
       setErrorMsg("Impossibile salvare il profilo. Riprova.");
     } finally {
       setSavingProfile(false);
@@ -102,13 +107,15 @@ export default function Profile() {
   async function handleUpdateSecurity(e) {
     e.preventDefault();
     if (!user) return;
+
     setUpdatingSecurity(true);
     setSecurityMsg("");
     setErrorMsg("");
 
     try {
-      if (newEmail && newEmail !== user.email) {
-        await updateEmail(user, newEmail);
+      const cleanEmail = newEmail.trim();
+      if (cleanEmail && cleanEmail !== user.email) {
+        await updateEmail(user, cleanEmail);
       }
       if (newPassword) {
         if (newPassword.length < 6) {
@@ -132,18 +139,19 @@ export default function Profile() {
   // Invio email di reset password
   async function handleSendReset() {
     if (!user?.email) return;
+
     setSecurityMsg("");
     setErrorMsg("");
 
     try {
       await sendPasswordResetEmail(auth, user.email);
       setSecurityMsg("Email di reimpostazione inviata!");
-    } catch (err) {
+    } catch {
       setErrorMsg("Errore durante l'invio dell'email di reset.");
     }
   }
 
-  // Eliminazione definitiva dell'account
+  // Eliminazione definitiva dell'account e pulizia dati su Firestore
   async function handleDeleteAccount() {
     setDeleteError("");
     setDeleting(true);
@@ -152,8 +160,8 @@ export default function Profile() {
       const currentUser = auth.currentUser;
       if (!currentUser) return;
 
-      // 1. Pulizia a cascata dei libri
-      const booksRef = collection(db, "users", currentUser.uid, "books");
+      // 1. Pulizia a cascata dei libri nella collezione libraries/{uid}/books
+      const booksRef = collection(db, "libraries", currentUser.uid, "books");
       const snapshot = await getDocs(booksRef);
       if (!snapshot.empty) {
         const batch = writeBatch(db);
@@ -161,10 +169,10 @@ export default function Profile() {
         await batch.commit();
       }
 
-      // 2. Eliminazione documento utente
+      // 2. Eliminazione documento profilo/traguardi utente
       await deleteDoc(doc(db, "users", currentUser.uid));
 
-      // 3. Eliminazione utente Auth
+      // 3. Eliminazione utente da Firebase Auth
       await deleteUser(currentUser);
 
       navigate("/login");
@@ -184,13 +192,13 @@ export default function Profile() {
   return (
     <div className="dashboard">
       <header className="dashboard-header">
-        <Link to="/" className="icon-button" title="Torna indietro">
+        <Link to="/" className="icon-button" title="Torna indietro" aria-label="Torna indietro">
           <ArrowLeft size={20} />
         </Link>
         <h1 style={{ textAlign: "center", width: "100%" }}>
-          Il tuo 🤩<i>stupendo</i>🤩 profilo 
+          Il tuo 🤩<i>stupendo</i>🤩 profilo
         </h1>
-        <div style={{ width: 20 }} />
+        <div style={{ width: 20 }} aria-hidden="true" />
       </header>
 
       <main style={{ maxWidth: 600, width: "100%", margin: "0 auto", padding: "16px" }}>
@@ -199,7 +207,7 @@ export default function Profile() {
             Caricamento profilo…
           </p>
         ) : (
-          <div className="auth-card" style={{ maxWidth: "100%", margin: "0" }}>
+          <div className="auth-card" style={{ maxWidth: "100%", margin: 0 }}>
             {errorMsg && <p className="auth-error">{errorMsg}</p>}
             {profileMsg && (
               <p style={{ color: "var(--gold-bright)", fontSize: "0.9rem", margin: "8px 0" }}>
@@ -260,7 +268,7 @@ export default function Profile() {
                           alt={av.label}
                           style={{ width: 48, height: 48, objectFit: "contain", marginBottom: 6 }}
                           onError={(e) => {
-                            e.target.style.display = "none";
+                            e.currentTarget.style.display = "none";
                           }}
                         />
                         <span style={{ fontSize: "0.8rem", fontWeight: isSelected ? 600 : 400 }}>
@@ -295,6 +303,7 @@ export default function Profile() {
                 <input
                   id="sec-email"
                   type="email"
+                  autoComplete="email"
                   value={newEmail}
                   onChange={(e) => setNewEmail(e.target.value)}
                   style={{ width: "100%", boxSizing: "border-box" }}
@@ -308,6 +317,7 @@ export default function Profile() {
                 <input
                   id="sec-pass"
                   type="password"
+                  autoComplete="new-password"
                   placeholder="Questa ricordatela!"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}

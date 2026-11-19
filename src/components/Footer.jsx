@@ -1,3 +1,4 @@
+// Footer dell'applicazione con link al modulo di feedback
 export default function Footer() {
   return (
     <footer className="app-footer">

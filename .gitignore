@@ -1,11 +1,23 @@
-# Dipendenze 
+# Dipendenze
 node_modules/
 
-# Variabili d'ambiente e credenziali
-.env 
-.env.local 
-.env.*.local 
+# Variabili d'ambiente e credenziali (mantiene tracciato .env.example)
+.env
+.env.local
+.env.*.local
+!.env.example
 
-# Cartella di build finale 
-dist/ 
+# Cartelle di build e cache Vite
+dist/
 build/
+.vite/
+
+# Cache e log di Firebase CLI
+.firebase/
+firebase-debug.log
+firestore-debug.log
+
+# File di sistema e log
+.DS_Store
+Thumbs.db
+*.log

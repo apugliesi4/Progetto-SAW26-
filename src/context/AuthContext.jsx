@@ -1,74 +1,75 @@
+import { createContext, useContext, useEffect, useState } from "react";
 import {
   createUserWithEmailAndPassword,
-  sendEmailVerification,
   onAuthStateChanged,
+  sendEmailVerification,
+  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signOut,
 } from "firebase/auth";
-import { createContext, useContext, useEffect, useState } from "react";
 import { auth } from "../lib/firebase";
 
 const AuthContext = createContext(null);
+
+// oxlint-disable-next-line react/only-export-components
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth deve essere usato all'interno di un AuthProvider");
+  }
+  return context;
+}
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      // Imposta l'utente nello stato solo se ha confermato l'email
-      if (firebaseUser && firebaseUser.emailVerified) {
-        setUser(firebaseUser);
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      if (currentUser && currentUser.emailVerified) {
+        setUser(currentUser);
       } else {
         setUser(null);
       }
       setLoading(false);
     });
 
-    return unsubscribe;
+    return () => unsubscribe();
   }, []);
 
-  // Registrazione: crea l'account, invia l'email ed espelle subito l'utente
-  const signup = async (email, password) => {
-    const credential = await createUserWithEmailAndPassword(auth, email, password);
-    
-    // Invia link di verifica
-    await sendEmailVerification(credential.user);
-    
-    // Disconnetti immediatamente per impedire l'accesso automatico
+  async function signup(email, password) {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    await sendEmailVerification(userCredential.user);
     await signOut(auth);
-    
-    return credential;
-  };
+    return userCredential;
+  }
 
-  // Login: controlla se l'email è stata confermata prima di consentire l'accesso
-  const login = async (email, password) => {
-    const credential = await signInWithEmailAndPassword(auth, email, password);
-
-    // Se l'utente non ha cliccato sul link di verifica nella mail
-    if (!credential.user.emailVerified) {
+  async function login(email, password) {
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    if (!userCredential.user.emailVerified) {
       await signOut(auth);
-      const error = new Error("Devi confermare la tua email prima di accedere. Controlla la posta in arrivo o lo Spam.");
-      error.code = "auth/unverified-email";
-      throw error;
+      const err = new Error("E-mail non verificata.");
+      err.code = "auth/email-not-verified";
+      throw err;
     }
+    return userCredential;
+  }
 
-    return credential;
-  };
+  function logout() {
+    return signOut(auth);
+  }
 
-  // Funzione per consentire all'utente di richiedere un nuovo link se non l'ha ricevuto
-  const resendVerification = async (email, password) => {
-    const credential = await signInWithEmailAndPassword(auth, email, password);
-    if (!credential.user.emailVerified) {
-      await sendEmailVerification(credential.user);
-      await signOut(auth);
-    } else {
-      await signOut(auth);
-      throw new Error("Questo indirizzo email risulta già verificato. Puoi effettuare il login.");
+  function resetPassword(email) {
+    return sendPasswordResetEmail(auth, email);
+  }
+
+  async function resendVerificationEmail(email, password) {
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    if (!userCredential.user.emailVerified) {
+      await sendEmailVerification(userCredential.user);
     }
-  };
-
-  const logout = () => signOut(auth);
+    await signOut(auth);
+  }
 
   const value = {
     user,
@@ -76,16 +77,13 @@ export function AuthProvider({ children }) {
     signup,
     login,
     logout,
-    resendVerification,
+    resetPassword,
+    resendVerificationEmail,
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
-
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth deve essere usato dentro un AuthProvider");
-  }
-  return context;
+  return (
+    <AuthContext.Provider value={value}>
+      {!loading && children}
+    </AuthContext.Provider>
+  );
 }

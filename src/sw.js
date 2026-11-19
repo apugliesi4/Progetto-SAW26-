@@ -1,51 +1,33 @@
-import { precacheAndRoute } from "workbox-precaching";
+import { clientsClaim } from "workbox-core";
+import { cleanupOutdatedCaches, createHandlerBoundToURL, precacheAndRoute } from "workbox-precaching";
+import { NavigationRoute, registerRoute, setCatchHandler } from "workbox-routing";
 import { initializeApp } from "firebase/app";
 import { getMessaging, onBackgroundMessage } from "firebase/messaging/sw";
 
-precacheAndRoute(self.__WB_MANIFEST);
-
 const OFFLINE_FALLBACK = "/offline.html";
 
-// Caching della pagina offline statica
-self.addEventListener("install", (event) => {
+// Attiva subito il nuovo Service Worker senza attendere la chiusura delle schede
+self.skipWaiting();
+clientsClaim();
 
-  // Salta la fase di attesa attivando subito il nuovo Service Worker 
-  self.skipWaiting();
+// Precacha tutti gli asset generati da Vite (inclusi index.html e offline.html) e pulisce vecchie cache
+precacheAndRoute(self.__WB_MANIFEST);
+cleanupOutdatedCaches();
 
-  event.waitUntil(
-    caches.open("offline-cache").then((cache) => cache.add(OFFLINE_FALLBACK))
-  );
-});
+// Routing SPA: serve index.html precachato per tutte le rotte interne (es. /profile, /achievements)
+const navigationHandler = createHandlerBoundToURL("/index.html");
+registerRoute(new NavigationRoute(navigationHandler));
 
-// Se salta la connessione, mostra offline.html
-self.addEventListener("fetch", (event) => {
-  if (event.request.mode === "navigate") {
-    event.respondWith(
-      fetch(event.request).catch(async () => {
-        const cache = await caches.open("offline-cache");
-        return await cache.match(OFFLINE_FALLBACK);
-      })
-    );
+// Fallback offline: se una richiesta di navigazione fallisce del tutto, mostra offline.html
+setCatchHandler(async ({ request }) => {
+  if (request.destination === "document") {
+    const cachedOffline = await caches.match(OFFLINE_FALLBACK, { ignoreSearch: true });
+    return cachedOffline || Response.error();
   }
+  return Response.error();
 });
 
-self.addEventListener("activate", (event) => {
-  event.waitUntil(
-
-    // Prende il controllo immediato di tutte le schede/pagine aperte
-    self.clients.claim().then(async () => {
-
-      // Pulizia di vecchie cache non più necessarie per aggiornamento versione
-      const cacheNames = await caches.keys();
-      return Promise.all(
-        cacheNames
-          .filter((name) => name !== "offline-cache" && !name.startsWith("workbox-precache"))
-          .map((name) => caches.delete(name))
-      );
-    })
-  );
-});
-
+// Inizializzazione Firebase Cloud Messaging per notifiche in background
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -67,4 +49,18 @@ onBackgroundMessage(messaging, (payload) => {
     icon: "/icons/icon-192.png",
     badge: "/icons/icon-192.png",
   });
+});
+
+// Apre l'app (o porta in primo piano la scheda già aperta) al click sulla notifica
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if ("focus" in client) return client.focus();
+      }
+      return self.clients.openWindow("/");
+    })
+  );
 });

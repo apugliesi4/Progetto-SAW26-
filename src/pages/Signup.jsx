@@ -40,7 +40,7 @@ export default function Signup() {
       }
 
       navigate("/");
-    } catch (err) {
+    } catch {
       setError("Registrazione non riuscita. L'email potrebbe essere già in uso.");
     } finally {
       setSubmitting(false);

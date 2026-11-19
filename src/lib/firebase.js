@@ -1,9 +1,4 @@
-// Configurazione Firebase.
-// Le chiavi vengono lette dalle variabili d'ambiente (vedi .env.example).
-// Crea un progetto su https://console.firebase.google.com, abilita
-// Authentication (Email/Password) e Firestore Database, poi copia
-// le credenziali della tua Web App in un file .env locale.
-
+// Inizializzazione Firebase tramite variabili d'ambiente Vite (.env)
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
@@ -16,6 +11,11 @@ const firebaseConfig = {
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
+
+// Avviso rapido in sviluppo se manca la configurazione .env
+if (import.meta.env.DEV && !firebaseConfig.apiKey) {
+  console.warn("Configurazione Firebase mancante: controlla le variabili VITE_FIREBASE_* nel file .env");
+}
 
 const app = initializeApp(firebaseConfig);
 
